@@ -51,13 +51,13 @@ include("util/lap.jl")
 include("taxa.jl")
 export TaxonSet, add!, key
 
-include("tree_interface.jl")
+include("core.jl")
 export treetype, nodetype, branchtype
 export AbstractTree, AbstractNode, AbstractBranch
 export isinner, isouter
 export neighbours, children, parent, branch_between, nodes_flanking
 export newnode!, newbranch!
-export link!, unlink!, graft!, ungraft!, collapse!, swapnodes!
+export link!, unlink!, swapnodes!
 
 include("show.jl")
 
