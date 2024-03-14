@@ -246,6 +246,13 @@ mutable struct BipartitionTable
     end
 end
 
+
+
+
+
+
+
+
 Base.show(io::IO, bpt::BipartitionTable) =
     print(io, "BipartitionTable: $(bpt.m) bipartitions from $(bpt.n) trees")
 
@@ -271,13 +278,12 @@ end
 function record_incidence!(bptable::BipartitionTable, bp::TaxonBipartition, i)
     bpindex = get(bptable.dict, bp, 0)
     if bpindex == 0
-        bpindex = bptable.m += 1
+        bptable.m += 1
+        bpindex = bptable.m
         bptable.dict[bp] = bpindex
-        if bpindex > bptable.cap
+        if bptable.m > bptable.cap
             new_entry = falses(BPTABLE_GROWBY, bptable.n)
             bptable.cap += BPTABLE_GROWBY
-            new_entry = falses(1024, bptable.n)
-            bptable.cap += 1024
             bptable.data = vcat(bptable.data, new_entry)
         end
     end
@@ -330,4 +336,62 @@ function bipartition_table(trees, trim=true; singletons = false)
 end
 
 
+#### Alternative implementations
 
+
+mutable struct BipartitionTable2
+    "Mapping of bipartitions to rows in the table"
+    dict::OrderedDict{TaxonBipartition,Int}
+    "Table of occurrence of bipartitions (rows = bipartitions, columns = trees)"
+    data::Vector{Vector{UInt32}}
+    "Number of trees"
+    n::Int
+    "Index of the last unique bipartition added to the table"
+    m::Int
+
+    function BipartitionTable2(n, k, singletons=false)
+        npb = singletons ? (2 * k - 3) : (k - 3)
+        data = [zeros(UInt32, npb) for _ in 1:n]
+
+        return new(OrderedDict{TaxonBipartition,Int}(), data, n, 0)
+    end
+end
+
+
+function bipartition_table2(trees; singletons=false)
+    ntree = length(trees)
+    k = length(first(trees).taxonset)
+    bptable = BipartitionTable2(ntree, k, singletons)
+    skip_singletons = ! singletons
+
+    for (i, tree) in enumerate(trees)
+        bpvec = raw_bipartitions(tree)
+        j = 0
+        for bp in bpvec
+            is_singleton(bp) & skip_singletons && continue
+            j += 1
+            normalise!(bp)
+            record_incidence!(bptable, bp, i, j)
+        end
+        sort!(bptable.data[i], rev=true)
+    end
+
+    return bptable
+end
+
+
+
+
+function record_incidence!(bptable::BipartitionTable2, bp::TaxonBipartition, i, j)
+    bpindex = get(bptable.dict, bp, 0)
+    if bpindex == 0
+        bptable.m += 1
+        bpindex = bptable.m
+        bptable.dict[bp] = bpindex
+    end
+    
+    bptable.data[i][j] = bpindex
+
+    return nothing
+end
+    

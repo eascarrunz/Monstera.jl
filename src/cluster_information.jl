@@ -145,8 +145,8 @@ function clustering_information_dist(trees; diffonly=true, singletons=false)
 
         for j in 1:n, i in 1:(j - 1)
             # Select only the bipartitions that are not shared between the two trees
-            bpincidence1 .= bptable.data[:, i]
-            bpincidence2 .= bptable.data[:, j]
+            bpincidence1 .= bptable.data[1:bptable.m, i]
+            bpincidence2 .= bptable.data[1:bptable.m, j]
             bpincidence_different .= bpincidence1 .⊻ bpincidence2
             bplist1 = bptable.bipartitions[bpincidence1 .& bpincidence_different]
             bplist2 = bptable.bipartitions[bpincidence2 .& bpincidence_different]
@@ -194,3 +194,45 @@ function clustering_information_dist(
         
     return d
 end
+
+
+##### Alternative
+
+
+function clustering_information_dist2(trees; diffonly=true, singletons=false)
+    n = length(trees)
+    k = length(first(trees).taxonset)
+    bptable = bipartition_table2(trees; singletons=singletons)
+    d = zeros(Float64, n, n)
+    bpinds1 = zeros(Int, bptable.m)
+    bpinds2 = zeros(Int, bptable.m)
+    
+    if diffonly
+        for j in 1:n, i in 1:(j - 1)
+            # Select only the bipartitions that are not shared between the two trees
+            m1, m2 = two_way_setdiff(bptable.data[i], bptable.data[j], bpinds1, bpinds2)
+            bplist1, bplist2 = bptable.dict.keys[bpinds1[1:m1]], bptable.dict.keys[bpinds2[1:m2]]
+            # bpincidence1 .= bptable.data[1:bptable.m, i]
+            # bpincidence2 .= bptable.data[1:bptable.m, j]
+            # bpincidence_different .= bpincidence1 .⊻ bpincidence2
+            # bplist1 = bptable.bipartitions[bpincidence1 .& bpincidence_different]
+            # bplist2 = bptable.bipartitions[bpincidence2 .& bpincidence_different]
+            
+            @inbounds d[i, j] = clustering_information_dist(bplist1, bplist2, k)
+            bpinds1 .= bpinds2 .= 0
+        end
+    else
+        for j in 1:n, i in 1:(j - 1)
+            bpinds1 = bptable.data[i]
+            bpinds2 = bptable.data[j]
+            bplist1 = bptable.bipartitions[bpinds1]
+            bplist2 = bptable.bipartitions[bpinds2]
+    
+            @inbounds d[i, j] = clustering_information_dist(bplist1, bplist2, k)
+        end
+    end
+
+    return d
+end
+
+

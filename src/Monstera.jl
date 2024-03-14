@@ -47,6 +47,7 @@ setpropertyerror(T::Type, key::Symbol) =
 
 # Linear assignment problem solver for the clustering information distance
 include("util/lap.jl")
+include("util/misc.jl")
 
 include("taxa.jl")
 export TaxonSet, add!, key

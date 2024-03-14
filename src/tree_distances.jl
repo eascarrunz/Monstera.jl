@@ -1,13 +1,24 @@
 function rf_dist(trees; singletons = false)
     ntree = length(trees)
     d = zeros(Int, ntree, ntree)
-    bptable = bipartition_table(trees; singletons = singletons)
+    bptable = bipartition_table(trees, false; singletons = singletons)
     bpincidence_buffer = falses(bptable.m)
     for j in 1:ntree, i in 1:j
-        @inbounds bpincidence_buffer .= bptable.data[:, i]
-        @inbounds bpincidence_buffer .⊻= bptable.data[:, j]
+        @inbounds bpincidence_buffer .= bptable.data[1:bptable.m, i]
+        @inbounds bpincidence_buffer .⊻= bptable.data[1:bptable.m, j]
         @inbounds d[i, j] = sum(bpincidence_buffer)
         bpincidence_buffer .= false
+    end
+
+    return d
+end
+
+function rf_dist2(trees; singletons = false)
+    ntree = length(trees)
+    d = zeros(Int, ntree, ntree)
+    bptable = bipartition_table2(trees; singletons = singletons)
+    for j in 1:ntree, i in 1:j
+        @inbounds d[i, j] = count_symdiff(bptable.data[i], bptable.data[j])
     end
 
     return d
