@@ -1,6 +1,6 @@
-"Number of new empty entries to allocate in a bipartition table when a new bipartition is
-encountered"
-const BPTABLE_GROWBY = 1_024
+"Bipartition table grows by adding its current number of entries times 
+`BPTABLE_GROWTH_FACTOR`"
+const BPTABLE_GROWTH_FACTOR = 1
 
 """
     TaxonBipartition
@@ -301,8 +301,8 @@ function record_incidence!(bptable::BipartitionTable, bp::TaxonBipartition, i)
         bpindex = bptable.m
         bptable.dict[bp] = bpindex
         if bptable.m > bptable.cap
-            new_entry = falses(BPTABLE_GROWBY, bptable.n)
-            bptable.cap += BPTABLE_GROWBY
+            new_entry = falses(BPTABLE_GROWTH_FACTOR * bptable.m, bptable.n)
+            bptable.cap += BPTABLE_GROWTH_FACTOR * bptable.m
             bptable.data = vcat(bptable.data, new_entry)
         end
     end
