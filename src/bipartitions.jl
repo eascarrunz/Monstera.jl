@@ -22,6 +22,31 @@ Base.length(bp::TaxonBipartition) = length(bp.v)
 Base.similar(bp::TaxonBipartition) = TaxonBipartition(falses(length(bp)))
 Base.firstindex(::TaxonBipartition) = firstindex(bp.v)
 Base.lastindex(bp::TaxonBipartition) = lastindex(bp.v)
+Base.isequal(bp1::TaxonBipartition, bp2::TaxonBipartition) = bp1.v == bp2.v
+
+Base.:~(bp::TaxonBipartition) = TaxonBipartition(.~ bp.v.chunks)
+Base.:|(bp1::TaxonBipartition, bp2::TaxonBipartition) =
+    TaxonBipartition(bp1.v.chunks .| bp2.v.chunks)
+Base.:&(bp1::TaxonBipartition, bp2::TaxonBipartition) =
+    TaxonBipartition(bp1.v.chunks .& bp2.v.chunks)
+
+function Base.count_ones(bp::TaxonBipartition)
+    s = 0
+    for chunk in bp.v.chunks
+        s += count_ones(chunk)
+    end
+
+    return s
+end
+
+function Base.count_zeros(bp::TaxonBipartition)
+    s = 0
+    for chunk in bp.v.chunks
+        s += count_zeros(chunk)
+    end
+    
+    return s
+end
 
 
 """
@@ -56,7 +81,7 @@ function compute_bipartition(branchnode, bpvec, k)
     end
 
     for cbranchnode in children(branchnode)
-        bp.v .|= compute_bipartition(cbranchnode, bpvec, k).v
+        bp.v.chunks .|= compute_bipartition(cbranchnode, bpvec, k).v.chunks
     end
 
     return bp
@@ -70,7 +95,7 @@ Normalise a bipartition so that the first bit is always naught (Penny & Hendy 19
 """
 function normalise!(bp)
     if first(bp)
-        bp.v .= .~ bp.v
+        bp.v.chunks .= .~ bp.v.chunks
     end
 end
 
@@ -126,7 +151,7 @@ about tree topology if one knows that every taxon is a leaf node. But singleton 
     are *not* "trivial" in trees with sampled ancestors.
 """
 function is_singleton(bp::TaxonBipartition)
-    s = sum(bp)
+    s = count_ones(bp)
 
     return s == 1 || s == length(bp) - 1
 end
@@ -245,12 +270,6 @@ mutable struct BipartitionTable
         return new(OrderedDict{TaxonBipartition,Int}(), data, n, 0, cap)
     end
 end
-
-
-
-
-
-
 
 
 Base.show(io::IO, bpt::BipartitionTable) =
