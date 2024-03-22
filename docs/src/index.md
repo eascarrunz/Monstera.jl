@@ -1,5 +1,11 @@
 # Monstera.jl Documentation
 
+
+```@meta
+CurrentModule = Monstera
+```
+
+
 This is an experimental package for phylogenetics in Julia.
 
 These are the main objectives of this package:
@@ -21,8 +27,6 @@ Let's start off loading a tree in Newick format. This is a little extract of the
 Araceae from Haigh et al. (2022): 
 
 ```jldoctest quick_intro
-julia> using Monstera;
-
 julia> philo_string = "(((Philodendron,Adelonema),(Homalomena,Furtadoa)),(Cercestis,Culcasia),Monstera);";
 
 ```
@@ -121,8 +125,6 @@ diagram of the tree, or a sub-tree, using characters on a terminal window.  Let'
 `textplot(tree)`. The tree is plotted from left to right, from its root node.
 
 ```julia-repl
-julia> using Monstera;
-
 julia> tree = Newick.parse(RoundaboutTree, "(((A,B),C),(D,E),H);");
 
 julia> textplot(tree)

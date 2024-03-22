@@ -155,7 +155,7 @@ the tail of the link list of each node.
 
 The `graft!` function can also be used to link nodes without need to pass a branch object.
 
-See also [`graft!`, `unlink!`](@ref)
+See also [`graft!`](@ref) and [`unlink!`](@ref)
 """
 link!(node1::AbstractNode, branch::AbstractBranch, node2::AbstractNode)
 
