@@ -221,12 +221,12 @@ function draw_textplot(branchnode, drawing, canvas, x, l)
     node_symbol = node.taxon > 0 ? '●' : '○'
     node_draw_width = 1
     
-    id_text = string('(', node.id, ')') ^ drawing.ids
+    id_text = drawing.ids ? string('(', node.id, ')') : ""
     node_draw_width += length(id_text)
     
     this_is_outer = isouter(node)
     draw_label = (this_is_outer & drawing.outerlabels) | (! this_is_outer & drawing.innerlabels)
-    label_text = node.label ^ draw_label
+    label_text = draw_label ? node.label : ""
     node_draw_width += length(label_text)
     
     node_text = string(node_symbol, id_text, label_text)
