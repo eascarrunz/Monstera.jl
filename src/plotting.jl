@@ -288,9 +288,12 @@ Warning: Branch lengths are not respected!
 
 # Examples
 ```jldoctest
-julia> newick = "((A,B)H,((C,D,E)I,(F)K)J)G;";
-julia> tree = Newick.parse(RoundaboutTree, newick, TaxonSet());
-julia> textplot(tree)
+newick = "((A,B)H,((C,D,E)I,(F)K)J)G;"
+tree = Newick.parse(RoundaboutTree, newick, TaxonSet())
+textplot(tree)
+
+# output
+
      ┌───────●(3)A
 ┌────○(2)
 │    └───────●(4)B
