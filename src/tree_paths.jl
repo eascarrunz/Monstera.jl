@@ -32,16 +32,16 @@ if no path is found.
 ```jldoctest
 julia> tree = Newick.parse(RoundaboutTree, "((5,2),((4,1),3));");
 
-julia> textplot(tree, outerlabels=false)
-     ┌───────○(3)
-┌────○(2)
-│    └───────○(4)
-○(1)
-│            ┌───────○(7)
-│    ┌───────○(6)
-└────○(5)    └───────○(8)
-     │
-     └───────○(9)
+# julia> textplot(tree, outerlabels=false)
+#      ┌───────○(3)
+# ┌────○(2)
+# │    └───────○(4)
+# ○(1)
+# │            ┌───────○(7)
+# │    ┌───────○(6)
+# └────○(5)    └───────○(8)
+#      │
+#      └───────○(9)
 
 # Find the path between node 4 and node 6
 
@@ -54,6 +54,7 @@ julia> path_nodes
  RoundaboutNode #1 (no taxon)
  RoundaboutNode #5 (no taxon)
  RoundaboutNode #6 (no taxon)
+
 julia> path_branches
 4-element Vector{RoundaboutBranch}:
  RoundaboutBranch #3: 2 ○⎯⎯⎯○ 4 (length NaN)
