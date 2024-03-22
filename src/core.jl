@@ -187,13 +187,27 @@ function unlink!(node1::AbstractNode, node2::AbstractNode)
 end
 
 
+"""
+    hasparent(node)
+
+Check whether a node has a parent.
+"""
+function hasparent(node)
+    for neighbranchnode in neighbours(node)
+        first(nodes_flanking(first(neighbranchnode))) ≢ node && return true
+    end
+
+    return false
+end
 
 
 """
     parent(node)
-    parent(branchnode)
+    parent(branch => node)
 
 Return the parent of a node.
+
+Throws an error if the node has no parent.
 """
 Base.parent(node::AbstractNode) = 
     only(Iterators.filter(x -> first(nodes_flanking(first(x))) ≢ node, neighbours(node)))

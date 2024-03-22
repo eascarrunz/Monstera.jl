@@ -327,9 +327,14 @@ function textplot(io::IO, node::AbstractNode; kwargs...)
 
         return nothing
     end
-    branch = first(Monstera.parent(node))
-    textplot(io, branch => node; kwargs...)
 
+    if hasparent(node)
+        branch = first(Monstera.parent(node))
+        textplot(io, branch => node; kwargs...)
+    else
+        textplot(io, nothing => node; kwargs...)
+    end
+    
     return nothing
 end
 textplot(io::IO, tree::AbstractTree; kwargs...) = textplot(io, nothing => tree.root; kwargs...)

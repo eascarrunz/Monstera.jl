@@ -56,7 +56,7 @@ include("core.jl")
 export treetype, nodetype, branchtype
 export AbstractTree, AbstractNode, AbstractBranch
 export isinner, isouter
-export neighbours, children, parent, branch_between, nodes_flanking
+export neighbours, children, hasparent, parent, branch_between, nodes_flanking
 export newnode!, newbranch!
 export link!, unlink!, swapnodes!
 
