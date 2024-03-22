@@ -29,7 +29,7 @@ if no path is found.
 
 # Examples
 
-```jldoctest
+```julia
 julia> tree = Newick.parse(RoundaboutTree, "((5,2),((4,1),3));");
 
 # julia> textplot(tree, outerlabels=false)

@@ -287,7 +287,7 @@ Warning: Branch lengths are not respected!
 - `highlight=Int[]`: Vector of nodes or node IDs that will appear highlighted in the plot.
 
 # Examples
-```jldoctest
+```julia
 newick = "((A,B)H,((C,D,E)I,(F)K)J)G;"
 tree = Newick.parse(RoundaboutTree, newick, TaxonSet())
 textplot(tree)

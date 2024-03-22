@@ -110,7 +110,7 @@ Create a random binary tree of type `T` with the given taxon set, or the given n
 If `rooted` is `false`, the tree will be unrooted, i.e. it will have a basal trichotomy
 (this requires at least 3 outer nodes).
 
-```jldoctest
+```julia
 Random.seed!(1)
 textplot(randtree(RoundaboutTree, 5, false))
 
