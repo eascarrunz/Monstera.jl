@@ -7,3 +7,8 @@ makedocs(;
     # modules = [Monstera],
     doctest = false
     )
+
+
+deploydocs(
+    repo = "github.com/eascarrunz/Monstera.jl.git",
+)
