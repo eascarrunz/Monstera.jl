@@ -276,8 +276,10 @@ constructed, for instance, from a Newick string.
 
 Each side of a branch contain fields with the following information:
 - A reference to the `RoundaboutNode` connected by this side, or `nothing` if there is no node yet (this should only happen in intermediate stages of tree construction or branch swapping)
+
 - A reference to the next `RoundaboutBranch` connected to this side's node. If there are no
  other branches, this field points back to the present branch.
+
 - An instance of the side type of the next `RoundaboutBranch` which is connected to this side's node.
 
 Side types are `RoundaboutLeft`, `RoundaboutRight` and `RoundaboutNoSide`; subtypes of `RoundaboutSide`.
