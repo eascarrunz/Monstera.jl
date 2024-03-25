@@ -5,10 +5,11 @@ DocMeta.setdocmeta!(Monstera, :DocTestSetup, :(using Monstera); recursive=true)
 makedocs(;
     sitename = "Monstera.jl",
     # modules = [Monstera],
-    doctest = false
+    doctest = false,
+    checkdocs = :exports,
     )
 
 
-deploydocs(
-    repo = "github.com/eascarrunz/Monstera.jl.git",
-)
+# deploydocs(
+#     repo = "github.com/eascarrunz/Monstera.jl.git",
+# )

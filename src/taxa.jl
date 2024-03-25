@@ -44,7 +44,7 @@ key(ts::TaxonSet, inds...) = ts.list[inds...]
 
 
 """
-    hasname(taxonset, name)
+    haskey(taxonset, name)
 
 Check whether a taxon set contains a name.
 """
@@ -54,7 +54,7 @@ Base.length(ts::TaxonSet) = length(ts.list)
 
 
 """
-    names(taxonset)
+    keys(taxonset)
 
 Return the list of names of taxa in a taxon set.
 """
