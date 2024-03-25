@@ -10,6 +10,6 @@ makedocs(;
     )
 
 
-# deploydocs(
-#     repo = "github.com/eascarrunz/Monstera.jl.git",
-# )
+deploydocs(
+    repo = "github.com/eascarrunz/Monstera.jl.git",
+)
