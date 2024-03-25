@@ -22,7 +22,6 @@ Base.length(bp::TaxonBipartition) = length(bp.v)
 Base.similar(bp::TaxonBipartition) = TaxonBipartition(falses(length(bp)))
 Base.firstindex(::TaxonBipartition) = firstindex(bp.v)
 Base.lastindex(bp::TaxonBipartition) = lastindex(bp.v)
-Base.isequal(bp1::TaxonBipartition, bp2::TaxonBipartition) = bp1.v == bp2.v
 
 Base.:~(bp::TaxonBipartition) = TaxonBipartition(.~ bp.v.chunks)
 Base.:|(bp1::TaxonBipartition, bp2::TaxonBipartition) =
@@ -116,7 +115,7 @@ Base.last(x::TaxonBipartitionList) = x.bpvec[end]
 Base.firstindex(x::TaxonBipartitionList) = firstindex(x.bpvec)
 Base.lastindex(x::TaxonBipartitionList) = lastindex(x.bpvec)
 Base.iterate(iter::TaxonBipartitionList, state=1) =
-    state > iter.nbp ? nothing : (iter.bpvec[i], state + 1)
+    state > iter.nbp ? nothing : (iter.bpvec[state], state + 1)
 
 
 struct TaxonBipartitionListBranchIndexer
