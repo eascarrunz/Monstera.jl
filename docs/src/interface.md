@@ -55,6 +55,8 @@ branchtype(::Type{MyNode}) = MyBranch
 | `nodes` | - | Collection with settable indices listing all the nodes associated to the tree | No |
 | `branches` | - | Collection with settable indices listing all the branches associated to the tree | No |
 
+Tree types must have a constructor with the signature `MyTree(taxonset::Union{Nothing,TaxonSet}, n)`. The constructor initialises the tree with `n` nodes (`n` > 0) and `n - 1` branches.
+
 
 ## Mandatory methods
 

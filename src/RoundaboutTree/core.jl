@@ -30,9 +30,9 @@ const ROUNDABOUTBRANCH_PRIVATE_PROPERTIES = (
 )
 
 
-function Base.propertynames(::RoundaboutBranch, private=false)
+function Base.propertynames(::RoundaboutBranch, private::Bool=false)
     namelist = fieldnames(RoundaboutBranch)
-    private || intersect!(namelist, ROUNDABOUTBRANCH_PRIVATE_PROPERTIES)
+    namelist = private ? intersect(namelist, ROUNDABOUTBRANCH_PRIVATE_PROPERTIES) : namelist
 
     return namelist
 end

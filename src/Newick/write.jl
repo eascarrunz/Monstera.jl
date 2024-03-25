@@ -28,7 +28,7 @@ end
 function _write_newick_brlength(io::IO, branch::AbstractBranch, settings)
     settings.brlength || return nothing
     isnan(branch.length) && settings.skip_nanlength && return nothing
-    print(io,':' , string(round(branch.length, digits=settings.brlength_digits)))
+    print(io,':' , Base.string(round(branch.length, digits=settings.brlength_digits)))
 
     return nothing
 end

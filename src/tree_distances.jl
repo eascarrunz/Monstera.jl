@@ -35,8 +35,8 @@ end
     distance(trees, mode = :ci; <keyword arguments>)
     distance(tree1, tree2, mode = :ci; <keyword arguments>)
 
-Return the distance between two trees or a matrix of pairwise distances between trees in a 
-collection.
+Return the distance between two trees or a the upper triangle of the matrix of pairwise 
+distances among trees in a collection.
 
 Two distances are available through the `mode` argument: **Clustering Information Distance** 
 (`:ci`) (Smith 2020) and **Robinson-Foulds** (`:rf`) (Robinson & Foulds 1981).

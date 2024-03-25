@@ -275,8 +275,7 @@ function parse_node(io, pnode, treestate)
             node.label = node_label
             
             if isnothing(pnode) && ! isnothing(branch)
-                link!(branch, node)
-                @warn "the tree contains a branch at the root. Some functions may not handle this correctly."
+                error("the Newick string contains a branch attached at the root. This is not supported.")
             end
             
             isnothing(treestate.settings.taxonset) || assign_taxon!(node, treestate.settings)

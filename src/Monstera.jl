@@ -38,6 +38,7 @@ These conventions are new and **I've just started using them in the code**.
 
 module Monstera
 
+using Random
 using DataStructures
 
 pubpropertyerror(T::Type, key::Symbol) =
