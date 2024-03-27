@@ -30,7 +30,8 @@ function _link!(branch::RoundaboutBranch, node::AbstractNode, side::RoundaboutSi
         _set_next_branch!(branch, branch, side, side)
     else
         last_branch_side = getside(last_branch, node)
-        first_branch, first_branch_side = get_link_fields(last_branch, last_branch_side)
+        first_branch = get_next_branch(last_branch, last_branch_side)
+        first_branch_side = get_next_side(last_branch, last_branch_side)
         # first_branch = _next_branch(last_branch, last_branch_side)
         # first_branch_side = _next_side(last_branch, last_branch_side)
 

@@ -202,23 +202,27 @@ getside(branch::RoundaboutBranch, node::RoundaboutNode) =
 
 
 """
-Return the fields of a branch necessary to move on to the next branch on the left or
-right side.
+Return the next branch to move on to on the left or right side.
 """
-@inline get_link_fields(branch::RoundaboutBranch, ::RoundaboutLeft) = (
-    getfield(branch, :_left_next_branch),
+@inline get_next_branch(branch::RoundaboutBranch, ::RoundaboutLeft) =
+    getfield(branch, :_left_next_branch)
+
+@inline get_next_branch(branch::RoundaboutBranch, ::RoundaboutRight) =
+    getfield(branch, :_right_next_branch)
+
+@inline get_next_branch(::Nothing, ::RoundaboutSide) = nothing
+
+
+"""
+Return the next side to move on to on the left or right side.
+"""
+@inline get_next_side(branch::RoundaboutBranch, ::RoundaboutLeft) =
     getfield(branch, :_left_next_side)
-    )
 
-@inline get_link_fields(branch::RoundaboutBranch, ::RoundaboutRight) = (
-    getfield(branch, :_right_next_branch),
+@inline get_next_side(branch::RoundaboutBranch, ::RoundaboutRight) =
     getfield(branch, :_right_next_side)
-    )
 
-@inline get_link_fields(::Nothing, ::RoundaboutNoSide) = (
-    nothing,
-    :_no_side
-)
+@inline get_next_side(::Nothing, ::RoundaboutNoSide) = :_no_side
 
 struct RoundaboutBranchIterator{T<:Union{Nothing,RoundaboutBranch}}
     init_branch::T
@@ -234,7 +238,8 @@ end
 Base.iterate(::RoundaboutBranchIterator{Nothing}) = nothing
 
 function Base.iterate(iter::RoundaboutBranchIterator{RoundaboutBranch})
-    next_branch, next_side = get_link_fields(iter.init_branch, iter.init_side)
+    next_branch = get_next_branch(iter.init_branch, iter.init_side)
+    next_side = get_next_side(iter.init_branch, iter.init_side)
     
     node = getnode(iter.init_branch, _opposite_side(iter.init_side))
 
@@ -247,7 +252,8 @@ function Base.iterate(
     )
     branch, side = state
     branch ≡ iter.stopbefore && return nothing
-    next_branch, next_side = get_link_fields(branch, side)
+    next_branch = get_next_branch(branch, side)
+    next_side = get_next_side(branch, side)
     node = getnode(branch, _opposite_side(side))
 
     return branch => node, (next_branch, next_side)
@@ -263,7 +269,9 @@ function Base.length(iter::RoundaboutBranchIterator{RoundaboutBranch})
     branch = iter.init_branch
     side = iter.init_side
     while true
-        branch, side = get_link_fields(branch, side)
+        prev_side = side
+        side = get_next_side(branch, side)
+        branch = get_next_branch(branch, prev_side)
         l += 1
         branch ≡ iter.stopbefore && break
     end
@@ -276,7 +284,8 @@ function Base.last(iter::RoundaboutBranchIterator{RoundaboutBranch})
     side = iter.init_side
 
     while true
-        next_branch, next_side = get_link_fields(branch, side)
+        next_branch = get_next_branch(branch, side)
+        next_side = get_next_side(branch, side)
         next_branch ≡ iter.stopbefore && break
         branch = next_branch
         side = next_side
@@ -291,15 +300,17 @@ end
 function neighbours(node::RoundaboutNode)
     last_branch = getfield(node, :_last_branch)
     last_side = getfield(node, :_last_branch_side)
-    first_branch, first_side = get_link_fields(last_branch, last_side)
+    first_branch = get_next_branch(last_branch, last_side)
+    first_side = get_next_side(last_branch, last_side)
 
     return RoundaboutBranchIterator(first_branch, first_side, first_branch)
 end
 
 
 function _children(branch::RoundaboutBranch, side::RoundaboutSide)
-    next_branch, next_side = get_link_fields(branch, side)
-
+    next_branch = get_next_branch(branch, side)
+    next_side = get_next_side(branch, side)
+    
     iter = branch ≡ next_branch ? 
         RoundaboutBranchIterator(nothing, RoundaboutNoSide(), nothing) :
             RoundaboutBranchIterator(next_branch, next_side, branch)
@@ -377,7 +388,8 @@ Return the next branch and side, and the previous branch and side in a branch cy
 """
 function find_prev_and_next_branches(branch::RoundaboutBranch, side::RoundaboutSide)
     # current_branch = branch
-    current_branch, side = get_link_fields(branch, side)
+    current_branch = get_next_branch(branch, side)
+    side = get_next_side(branch, side)
     prev_branch = current_branch
     prev_side = side
     next_side = side
@@ -385,7 +397,8 @@ function find_prev_and_next_branches(branch::RoundaboutBranch, side::RoundaboutS
     while current_branch ≢ branch
         prev_branch = current_branch
         prev_side = side
-        current_branch, side = get_link_fields(current_branch, side)
+        current_branch = get_next_branch(prev_branch, prev_side)
+        side = get_next_side(prev_branch, prev_side)
     end
 
     return (prev_branch, prev_side), (next_branch, next_side)
@@ -401,7 +414,7 @@ function isouter(node::RoundaboutNode)
     last_branch = getfield(node, :_last_branch)
     isnothing(last_branch) && return true
     last_side = getfield(node, :_last_branch_side)
-    first_branch, _ = get_link_fields(last_branch, last_side)
+    first_branch = get_next_branch(last_branch, last_side)
 
     return last_branch ≡ first_branch
 end
@@ -429,7 +442,8 @@ function cycle_details(branch::RoundaboutBranch, side)
     while current_branch ∉ visited_branches
         details(current_branch)
         print('\n')
-        next_branch, next_side = get_link_fields(current_branch, current_side)
+        next_branch = get_next_branch(current_branch, current_side)
+        next_side = get_next_side(current_branch, current_side)
         next_branch ≡ branch && break
         push!(visited_branches, current_branch)
         current_branch, current_side = next_branch, next_side

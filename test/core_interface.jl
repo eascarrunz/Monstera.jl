@@ -41,6 +41,7 @@ for Ttype in CONCRETE_TREE_TYPES
         @test isempty(children(nothing => tree.nodes[1]))
     
         link!(tree.nodes[1], tree.branches[1], tree.nodes[2])
+
         @test only(neighbours(tree.nodes[1])) == (tree.branches[1] => tree.nodes[2])
         @test only(children(tree.nodes[1])) == (tree.branches[1] => tree.nodes[2])
         @test only(neighbours(tree.nodes[2])) == (tree.branches[1] => tree.nodes[1])
@@ -48,6 +49,7 @@ for Ttype in CONCRETE_TREE_TYPES
         @test only(children(nothing => tree.nodes[2])) == (tree.branches[1] => tree.nodes[1])
 
         link!(tree.nodes[2], tree.branches[2], tree.nodes[3])
+
         @test only(neighbours(tree.nodes[1])) == (tree.branches[1] => tree.nodes[2])
         @test length(neighbours(tree.nodes[2])) == 2
         @test only(neighbours(tree.nodes[3])) == (tree.branches[2] => tree.nodes[2])
@@ -57,5 +59,16 @@ for Ttype in CONCRETE_TREE_TYPES
         @test ! hasparent(tree.nodes[1])
         @test hasparent(tree.nodes[2])
         @test hasparent(tree.nodes[3])
+
+        unlink!(tree.nodes[2], tree.nodes[3])
+
+        @test isempty(neighbours(tree.nodes[3]))
+        @test isempty(children(tree.nodes[3]))
+        @test isempty(children(nothing => tree.nodes[3]))
+        @test only(neighbours(tree.nodes[1])) == (tree.branches[1] => tree.nodes[2])
+        @test only(children(tree.nodes[1])) == (tree.branches[1] => tree.nodes[2])
+        @test only(neighbours(tree.nodes[2])) == (tree.branches[1] => tree.nodes[1])
+        @test isempty(children(tree.nodes[2]))
+        @test only(children(nothing => tree.nodes[2])) == (tree.branches[1] => tree.nodes[1])
     end
 end
