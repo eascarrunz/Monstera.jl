@@ -205,19 +205,19 @@ getside(branch::RoundaboutBranch, node::RoundaboutNode) =
 Return the fields of a branch necessary to move on to the next branch on the left or
 right side.
 """
-get_link_fields(branch::RoundaboutBranch, ::RoundaboutLeft) = (
-    next_branch = getfield(branch, :_left_next_branch),
-    next_side   = getfield(branch, :_left_next_side)
+@inline get_link_fields(branch::RoundaboutBranch, ::RoundaboutLeft) = (
+    getfield(branch, :_left_next_branch),
+    getfield(branch, :_left_next_side)
     )
 
-get_link_fields(branch::RoundaboutBranch, ::RoundaboutRight) = (
-    next_branch = getfield(branch, :_right_next_branch),
-    next_side   = getfield(branch, :_right_next_side)
+@inline get_link_fields(branch::RoundaboutBranch, ::RoundaboutRight) = (
+    getfield(branch, :_right_next_branch),
+    getfield(branch, :_right_next_side)
     )
 
-get_link_fields(::Nothing, ::RoundaboutNoSide) = (
-    next_branch = nothing,
-    next_side = :_no_side
+@inline get_link_fields(::Nothing, ::RoundaboutNoSide) = (
+    nothing,
+    :_no_side
 )
 
 struct RoundaboutBranchIterator{T<:Union{Nothing,RoundaboutBranch}}
@@ -395,6 +395,16 @@ end
 sidestring(::RoundaboutLeft) = "left"
 sidestring(::RoundaboutRight) = "right"
 sidestring(::RoundaboutNoSide) = "noside"
+
+
+function isouter(node::RoundaboutNode)
+    last_branch = getfield(node, :_last_branch)
+    isnothing(last_branch) && return true
+    last_side = getfield(node, :_last_branch_side)
+    first_branch, _ = get_link_fields(last_branch, last_side)
+
+    return last_branch ≡ first_branch
+end
 
 
 function details(branch::RoundaboutBranch)
