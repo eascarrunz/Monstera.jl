@@ -376,3 +376,6 @@ end
 
 read(file::AbstractString, sink::Type, taxonset=nothing; args...) =
     read(file, sink, ReaderSettings(taxonset; args...))
+
+read(io::IO, sink::Type, taxonset=nothing; args...) =
+    read(io, sink, ReaderSettings(taxonset; args...))
