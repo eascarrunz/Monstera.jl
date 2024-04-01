@@ -1,1 +1,9 @@
 /Manifest.toml
+/docs/Manifest.toml
+/docs/build/*
+test/Manifest.toml
+alloc-profile.pb.gz
+debug.jl
+profile.pb.gz
+debug.r
+sandbox.jl
