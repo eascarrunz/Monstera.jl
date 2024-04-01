@@ -1,7 +1,3 @@
-"Bipartition table grows by adding its current number of entries times 
-`BPTABLE_GROWTH_FACTOR`"
-const BPTABLE_GROWTH_FACTOR = 1
-
 """
     TaxonBipartition
 
@@ -12,22 +8,30 @@ always naught (see Penny & Hendy 1985).
 """
 struct TaxonBipartition <: AbstractArray{Bool,1}
     v::BitVector
+
+    TaxonBipartition(v::BitVector) = new(v)
+    TaxonBipartition(ntax) = new(falses(ntax))
 end
 
 Base.size(bp::TaxonBipartition) = (length(bp.v), )
 Base.getindex(bp::TaxonBipartition, i::Int) = getindex(bp.v, i)
 Base.IndexStyle(::Type{<:TaxonBipartition}) = IndexLinear()
-Base.setindex!(bp::TaxonBipartition, v, i::Int) = setindex!(bp.v, v, i)
-Base.length(bp::TaxonBipartition) = length(bp.v)
-Base.similar(bp::TaxonBipartition) = TaxonBipartition(falses(length(bp)))
-Base.firstindex(::TaxonBipartition) = firstindex(bp.v)
+Base.firstindex(bp::TaxonBipartition) = firstindex(bp.v)
 Base.lastindex(bp::TaxonBipartition) = lastindex(bp.v)
+Base.setindex!(bp::TaxonBipartition, v, i::Int) = setindex!(bp.v, v, i)
+Base.similar(bp::TaxonBipartition) = TaxonBipartition(falses(length(bp)))
 
-Base.:~(bp::TaxonBipartition) = TaxonBipartition(.~ bp.v.chunks)
-Base.:|(bp1::TaxonBipartition, bp2::TaxonBipartition) =
-    TaxonBipartition(bp1.v.chunks .| bp2.v.chunks)
-Base.:&(bp1::TaxonBipartition, bp2::TaxonBipartition) =
-    TaxonBipartition(bp1.v.chunks .& bp2.v.chunks)
+Base.:~(bp::TaxonBipartition) = TaxonBipartition(.~ bp.v)
+Base.:|(bp1::TaxonBipartition, bp2::TaxonBipartition) = TaxonBipartition(bp1.v .| bp2.v)
+Base.:&(bp1::TaxonBipartition, bp2::TaxonBipartition) = TaxonBipartition(bp1.v .& bp2.v)
+
+function Base.isequal(a::TaxonBipartition, b::TaxonBipartition)
+    for (chunk1, chunk2) in zip(a.v.chunks, b.v.chunks)
+        chunk1 == chunk2 || return false
+    end
+    
+    return true
+end
 
 function Base.count_ones(bp::TaxonBipartition)
     s = 0
@@ -38,12 +42,13 @@ function Base.count_ones(bp::TaxonBipartition)
     return s
 end
 
+
 function Base.count_zeros(bp::TaxonBipartition)
     s = 0
     for chunk in bp.v.chunks
         s += count_zeros(chunk)
     end
-    
+
     return s
 end
 
@@ -71,71 +76,17 @@ function Base.show(io::IO, ::MIME"text/plain", bp::TaxonBipartition)
 end
 
 
-function compute_bipartition(branchnode, bpvec, k)
-    branch, node = branchnode
-    bp = bpvec[branch.id]
-
-    if node.taxon > 0
-        bp.v[node.taxon] = true
-    end
-
-    for cbranchnode in children(branchnode)
-        bp.v.chunks .|= compute_bipartition(cbranchnode, bpvec, k).v.chunks
-    end
-
-    return bp
-end
-
-
 """
     normalise!(bipartition)
 
 Normalise a bipartition so that the first bit is always naught (Penny & Hendy 1985)
 """
 function normalise!(bp)
-    if first(bp)
-        bp.v.chunks .= .~ bp.v.chunks
+    if first(bp.v)
+        bp.v .= .~ bp.v
     end
 end
 
-
-struct TaxonBipartitionList
-    bpvec::Vector{TaxonBipartition}
-    dict::OrderedDict{Int,Int}
-    nbp::Int
-end
-
-
-Base.getindex(x::TaxonBipartitionList, inds...) = getindex(x.bpvec, inds...)
-Base.length(x::TaxonBipartitionList) = x.nbp
-Base.size(x::TaxonBipartitionList) = (x.nbp, )
-Iterators.eltype(::TaxonBipartitionList) = TaxonBipartition
-Base.first(x::TaxonBipartitionList) = x.bpvec[begin]
-Base.last(x::TaxonBipartitionList) = x.bpvec[end]
-Base.firstindex(x::TaxonBipartitionList) = firstindex(x.bpvec)
-Base.lastindex(x::TaxonBipartitionList) = lastindex(x.bpvec)
-Base.iterate(iter::TaxonBipartitionList, state=1) =
-    state > iter.nbp ? nothing : (iter.bpvec[state], state + 1)
-
-
-struct TaxonBipartitionListBranchIndexer
-    bplist::TaxonBipartitionList
-end
-
-
-function Base.getproperty(bplist::TaxonBipartitionList, key::Symbol)
-    if key == :bybranch
-        return TaxonBipartitionListBranchIndexer(bplist)
-    else
-        getfield(bplist, key)
-    end
-end
-
-
-Base.getindex(x::TaxonBipartitionListBranchIndexer, ind...) =
-    x.bplist.bpvec[x.bplist.dict[ind...]]
-Base.firstindex(x::TaxonBipartitionListBranchIndexer) = 1
-Base.lastindex(x::TaxonBipartitionListBranchIndexer) = x.bplist.nbp
 
 
 """
@@ -150,66 +101,12 @@ about tree topology if one knows that every taxon is a leaf node. But singleton 
     are *not* "trivial" in trees with sampled ancestors.
 """
 function is_singleton(bp::TaxonBipartition)
-    s = count_ones(bp)
+    s = 0
+    for chunk in bp.v.chunks
+        s += count_ones(chunk)
+    end
 
     return s == 1 || s == length(bp) - 1
-end
-
-
-"""
-    raw_bipartitions(tree)
-
-Return a the raw (=unnormalised) bipartitions of a tree, singletons included.
-"""
-function raw_bipartitions(tree::AbstractTree)
-    ntax::Int=length(tree.taxonset)
-    bpvec = [TaxonBipartition(falses(ntax)) for _ in 1:length(tree.branches)]
-
-    for cbranchnode in children(nothing => tree.root)
-        compute_bipartition(cbranchnode, bpvec, ntax)
-    end
-
-    return bpvec
-end
-
-
-"""
-    bipartitions(tree, singletons=true)
-
-Return a list of taxon bipartitions corresponding to the branches of a tree.
-
-The tree and its nodes must be associated to a taxon set. Singleton bipartitions are 
-excluded by default.
-
-The returned list is of type `TaxonBipartitionList`. It is possible to retrieve the 
-bipartition corresponding to a branch with the `bybranch` property.
-"""
-function bipartitions(tree::AbstractTree; singletons=false)
-    bpvec = raw_bipartitions(tree)
-    dict = OrderedDict{Int,Int}()
-
-    if ! singletons
-        n_kept_bp = 0
-        keep_mask = falses(length(bpvec))
-        for (i, bp) in enumerate(bpvec)
-            this_is_singleton = is_singleton(bp)
-            keep_mask[i] = ! this_is_singleton
-            if ! this_is_singleton
-                n_kept_bp += 1
-                dict[i] = n_kept_bp
-            end
-        end
-
-        bpvec = bpvec[keep_mask]
-    else
-        n_kept_bp = length(bpvec)
-    end
-
-    for bp in bpvec
-        normalise!(bp)
-    end
-    
-    return TaxonBipartitionList(bpvec, dict, n_kept_bp)
 end
 
 
@@ -221,7 +118,7 @@ Check compatibility between two partitions.
 Two bipartitions B1 and B2 are compatible if it is logically possible for them to exist in 
 the same tree.
 
-This can be verified with one of the following conditions being true:
+This can be verified with any one of the following conditions being true:
 - B1 = B1 ∪ B2
 - B1 = B1 ∪ ¬B2
 - ¬B1 = ¬B1 ∪ B2
@@ -241,72 +138,80 @@ end
 
 
 mutable struct BipartitionTable
-    "Mapping of bipartitions to rows in the table"
-    dict::OrderedDict{TaxonBipartition,Int}
-    "Table of occurrence of bipartitions (rows = bipartitions, columns = trees)"
-    data::BitMatrix
-    "Number of trees"
-    n::Int
-    "Index of the last unique bipartition added to the table"
-    m::Int
-    "Current capacity for unique bipartitions"
-    cap::Int
+    "Map from bp to bp index in the table"
+    dict::OrderedDict{TaxonBipartition,UInt}
+    "Table with the indices of bps in each tree, column-wise"
+    records::Matrix{UInt}
+    "Number of bps encountered in the table"
+    nbp::UInt
 
-    """
-        BipartitionTable(n, k)
+    function BipartitionTable(ntax, ntrees)
+        bps_in_tree = ntax - 3
+        dict = OrderedDict{TaxonBipartition,UInt}()
+        records = zeros(UInt, bps_in_tree, ntrees)
 
-    Initalise a taxon bipartition incidence table with the following parameters for the size
-    hint:
-    - `n`: Number of trees
-    - `k`: Number of taxa
-    """
-    function BipartitionTable(n, k)
-        # Expected number of unique bipartitions in the tree set
-        cap = (k - 3) * n ÷ 5
-
-        data = falses(cap, n)
-
-        return new(OrderedDict{TaxonBipartition,Int}(), data, n, 0, cap)
+        return new(dict, records, 0)
     end
 end
 
 
 Base.show(io::IO, bpt::BipartitionTable) =
-    print(io, "BipartitionTable: $(bpt.m) bipartitions from $(bpt.n) trees")
-
-Base.getindex(bpt::BipartitionTable, bp::TaxonBipartition) =
-    getfield(bpt, :data)[getfield(bpt, :dict)[bp], :]
-
-Base.getindex(bpt::BipartitionTable, i::Int) = getfield(bpt, :data)[1:getfield(bpt, :m), i]
-
-Base.size(bpt::BipartitionTable) = bpt.m, bpt.n
+    print(io, "BipartitionTable: $(bpt.nbp) bipartitions from $(size(bpt.records, 2)) trees")
 
 
 function Base.getproperty(bpt::BipartitionTable, key::Symbol)
     if key == :bipartitions
         return getfield(getfield(bpt, :dict), :keys)
-    elseif key == :frequencies
-        return sum(getfield(bpt, :data), dims=2)
     else
         return getfield(bpt, key)
     end
 end
 
 
-function record_incidence!(bptable::BipartitionTable, bp::TaxonBipartition, i)
-    bpindex = get(bptable.dict, bp, 0)
-    if bpindex == 0
-        bptable.m += 1
-        bpindex = bptable.m
-        bptable.dict[bp] = bpindex
-        if bptable.m > bptable.cap
-            new_entry = falses(BPTABLE_GROWTH_FACTOR * bptable.m, bptable.n)
-            bptable.cap += BPTABLE_GROWTH_FACTOR * bptable.m
-            bptable.data = vcat(bptable.data, new_entry)
+function add_record!(bp_table::BipartitionTable, bp, treecol, treerow)
+    normalise!(bp)
+    bp_index = get(bp_table.dict, bp, 0)
+
+    if bp_index == 0
+        bp_table.nbp += 1
+        bp_index = bp_table.nbp
+        bp_table.dict[bp] = bp_index
+    end
+
+    @inbounds bp_table.records[treerow, treecol] = bp_index
+
+    return treerow + 1
+end
+
+
+function compute_bipartition!(
+    bp_table::BipartitionTable,
+    branchnode,
+    ntax,
+    treecol,
+    treerow
+    )
+    _, node = branchnode
+    bp = TaxonBipartition(ntax)
+
+    for cbranchnode in children(branchnode)
+        _, cnode = cbranchnode
+        if isouter(cnode)
+            cnode.taxon > 0 || continue
+            @inbounds bp.v[cnode.taxon] = true
+        else
+            treerow, cbp =
+                compute_bipartition!(bp_table, cbranchnode, ntax, treecol, treerow)
+            bp.v.chunks .|= cbp.v.chunks
+            treerow = add_record!(bp_table, cbp, treecol, treerow)
         end
     end
 
-    @inbounds bptable.data[bpindex, i] = true
+    if node.taxon > 0
+        @inbounds bp.v[node.taxon] = true
+    end
+
+    return treerow, bp
 end
 
 
@@ -315,101 +220,112 @@ end
 
 Return a record of the incidences of bipartitions in a collection of trees.
 
-The bipartition table contains a matrix where the rows represent unique bipartitions and the
-columns represent trees. The entries of the matrix are `true` when a bipartition occurs in
-a tree. The matrix can be accessed by indexing the table either by bipartition or by tree 
-index (multiple indices and ranges are not supported yet).
+The table contains:
 
-A number of entries are pre-allocated based on a guess of how many unique biparitions may be
-in the collection. There are removed by default (`trim=true`).
+- A list with all the unique bipartitions encountered in collection of trees
+- A record of the bipartitions that occur in each tree, identified by their index in the list.
+
+The record consists of a matrix where the trees are arranged by columns. Trees that are not
+fully resolved will contain zeros representing the absence of bipartitions.
 
 # Properties
 (Accessable through the dot-syntax)
 
 - `bipartitions`: The list of unique bipartitions
-- `frequencies`: The number of times each bipartition occurs in a tree
-- `n`: The number of trees
-- `m`: The number of unique bipartitions
 """
-function bipartition_table(trees, trim=true; singletons = false)
-    n = length(trees)
-    k = length(first(trees).taxonset)
-    bptable = BipartitionTable(n, k)
-    skip_singletons = ! singletons
+function bipartition_table(trees)
+    NType = nodetype(eltype(trees))
+    ntrees = length(trees)
+    ntax = length(first(trees).taxonset)
+    bp_table = BipartitionTable(ntax, ntrees)
 
-    for (i, tree) in enumerate(trees)
-        bpvec = raw_bipartitions(tree)
-        for bp in bpvec
-            is_singleton(bp) & skip_singletons && continue
-            normalise!(bp)
-            record_incidence!(bptable, bp, i)
+    progmeter = Progress(
+        ntrees;
+        output=stderr,
+        dt=2,
+        desc="Enumerating bipartitions",
+        showspeed=true,
+        enabled=!is_logging(stderr)
+        )
+
+    for (treecol, tree) in enumerate(trees)
+        compute_root::NType = tree.root
+        if isouter(compute_root)
+            compute_root = last(only(children(compute_root)))
+        end
+        
+        treerow = 1
+        for cbranchnode in children(nothing => compute_root)
+            _, cnode::NType = cbranchnode
+            isouter(cnode) && continue
+            treerow, bp =
+                compute_bipartition!(bp_table, cbranchnode, ntax, treecol, treerow)
+            treerow = add_record!(bp_table, bp, treecol, treerow)
+        end
+
+        next!(progmeter)
+    end
+
+    @showprogress desc="Sorting bipartition indices" dt=2 showspeed=true foreach(
+        sort!, eachcol(bp_table.records)
+        )
+    
+    return bp_table
+end
+
+
+function compute_bipartition!(bplist::Vector{TaxonBipartition}, branchnode, i)
+    _, node = branchnode
+    @inbounds bp = bplist[i]
+
+    for cbranchnode in children(branchnode)
+        _, cnode = cbranchnode
+        if isouter(cnode)
+            cnode.taxon > 0 || continue
+            @inbounds bp.v[cnode.taxon] = true
+        else
+            i, cbp = compute_bipartition!(bplist, cbranchnode, i + 1)
+            bp.v.chunks .|= cbp.v.chunks
+            normalise!(cbp)
         end
     end
 
-    if trim
-        bptable.data = bptable.data[1:bptable.m, :]
+    if node.taxon > 0
+        @inbounds bp.v[node.taxon] = true
     end
 
-    return bptable
+    return i, bp
 end
 
 
-#### Alternative implementations
+"""
+    bipartitions(tree)
 
+Return a vector of `TaxonBipartition`s that represent the bipartitions in the tree.
 
-mutable struct BipartitionTable2
-    "Mapping of bipartitions to rows in the table"
-    dict::OrderedDict{TaxonBipartition,Int}
-    "Table of occurrence of bipartitions (rows = bipartitions, columns = trees)"
-    data::Vector{Vector{UInt32}}
-    "Number of trees"
-    n::Int
-    "Index of the last unique bipartition added to the table"
-    m::Int
+Note that inner nodes of degree 2 (e.g. a bifurcation at the root) might cause some 
+bipartitions to be duplicated.
+"""
+function bipartitions(tree::T) where T <: AbstractTree
+    NType = nodetype(T)
+    ntax = length(tree.taxonset)
+    n_all_bp = length(tree.branches)
+    n_inner_bp = n_all_bp - ntax
+    bplist = [TaxonBipartition(ntax) for _ in 1:n_inner_bp]
 
-    function BipartitionTable2(n, k, singletons=false)
-        npb = singletons ? (2 * k - 3) : (k - 3)
-        data = [zeros(UInt32, npb) for _ in 1:n]
-
-        return new(OrderedDict{TaxonBipartition,Int}(), data, n, 0)
-    end
-end
-
-
-function bipartition_table2(trees; singletons=false)
-    ntree = length(trees)
-    k = length(first(trees).taxonset)
-    bptable = BipartitionTable2(ntree, k, singletons)
-    skip_singletons = ! singletons
-
-    for (i, tree) in enumerate(trees)
-        bpvec = raw_bipartitions(tree)
-        j = 0
-        for bp in bpvec
-            is_singleton(bp) & skip_singletons && continue
-            j += 1
-            normalise!(bp)
-            record_incidence!(bptable, bp, i, j)
-        end
-        sort!(bptable.data[i], rev=true)
+    i = 1
+    compute_root::NType = tree.root
+    if isouter(compute_root)
+        compute_root = last(only(children(compute_root)))
     end
 
-    return bptable
-end
-
-
-
-
-function record_incidence!(bptable::BipartitionTable2, bp::TaxonBipartition, i, j)
-    bpindex = get(bptable.dict, bp, 0)
-    if bpindex == 0
-        bptable.m += 1
-        bpindex = bptable.m
-        bptable.dict[bp] = bpindex
+    for cbranchnode in children(nothing => compute_root)
+        _, cnode::NType = cbranchnode
+        isouter(cnode) && continue
+        i, bp = compute_bipartition!(bplist, cbranchnode, i)
+        normalise!(bp)
+        i += 1
     end
-    
-    bptable.data[i][j] = bpindex
 
-    return nothing
+    return bplist
 end
-    

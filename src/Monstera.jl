@@ -40,6 +40,7 @@ module Monstera
 
 using Random
 using DataStructures
+using ProgressMeter
 
 pubpropertyerror(T::Type, key::Symbol) =
     error("`$(key) is not a public property of type $(T)")

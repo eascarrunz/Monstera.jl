@@ -32,3 +32,7 @@ end
     include("newick.jl")
 end
 
+@testset "Tree distances" begin
+    include("distances.jl")
+end
+

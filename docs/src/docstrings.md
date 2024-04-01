@@ -3,6 +3,10 @@
 CurrentModule = Monstera
 ```
 
+```@contents
+Pages = ["docstrings.md"]
+``` 
+
 ## Managing sets of taxa
 ```@docs
 TaxonSet
@@ -29,6 +33,11 @@ Newick.WriterSettings
 Newick.ReaderSettings
 ```
 
+## Plotting trees
+```@docs
+textplot
+```
+
 ## Branches and nodes
 ```@docs
 neighbours
@@ -38,7 +47,7 @@ isouter
 nodes_flanking
 branch_between
 hasparent
-parent
+parent(::Node)
 link!
 unlink!
 graft!
