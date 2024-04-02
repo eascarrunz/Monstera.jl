@@ -26,41 +26,6 @@ clustering_entropy(bplist) = sum(clustering_entropy.(bplist))
 clustering_entropy(tree::AbstractTree) = clustering_entropy(bipartitions(tree))
 
 
-# function _ic_element(x, y, ixy, ntax)
-#     ixy > 0 && x > 0 && y > 0 || return 0.0
-
-#     return ixy * (log2(ntax * ixy) - log2(x * y))
-# end
-
-
-# """
-# Return s * ntax
-# """
-# function _mutual_clustering_information(
-#     bp1::TaxonBipartition,
-#     bp2::TaxonBipartition,
-#     ntax=length(bp1)
-#     )
-#     A1, A2 = sum(bp1), sum(bp2)
-#     B1, B2 = ntax - A1, ntax - A2
-
-#     iA1A2 = 0
-#     for (x1, x2) in zip(bp1.v.chunks, bp2.v.chunks)
-#         iA1A2 += count_ones(x1 & x2)
-#     end
-#     iA1B2 = A1 - iA1A2
-#     iB1A2 = A2 - iA1A2
-#     iB1B2 = B1 - iB1A2
-
-#     s = _ic_element(A1, A2, iA1A2, ntax) +
-#         _ic_element(A1, B2, iA1B2, ntax) +
-#         _ic_element(B1, A2, iB1A2, ntax) +
-#         _ic_element(B1, B2, iB1B2, ntax)
-
-#     return s
-# end
-
-
 """
     mutual_clustering_information(bipartition1, bipartition2)
 
