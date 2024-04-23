@@ -192,13 +192,13 @@ end
 Return matrix with ``s * n`` value of each bipartition matching.
 """
 function mci_cost_matrix!(M, bplist1, bplist2, lrows, lcols, ntax)
+    log2ntax = log2(ntax)
     @inbounds for colnum in 1:lcols
         bp1 = bplist2[colnum]
         A1 = mapreduce(count_ones, +, bp1.v.chunks)
         B1 = ntax - A1
         log2A1 = log2(A1)
         log2B1 = log2(B1)
-        log2ntax = log2(ntax)
         
         @inbounds for rownum in 1:lrows
             bp2 = bplist1[rownum]
