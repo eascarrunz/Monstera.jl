@@ -155,6 +155,7 @@ function clustering_information_dist(tree1::AbstractTree, tree2::AbstractTree; d
     ntax = length(tree1.taxonset)
 
     bptable = bipartition_table((tree1, tree2))
+    M = zeros(ntax - 3, ntax - 3)          # Cost matrix for bipartition matching
 
     if diffonly
         # Select only the bipartitions that are not shared between the two trees
@@ -167,7 +168,6 @@ function clustering_information_dist(tree1::AbstractTree, tree2::AbstractTree; d
         nbp1, nbp2 =
             special_setdiff!(unique_indices1, unique_indices2, bpindices1, bpindices2)
 
-        M = zeros(nbp1, nbp2)          # Cost matrix for bipartition matching
         bplist1 = @view bptable.bipartitions[unique_indices1[1:nbp1]]
         bplist2 = @view bptable.bipartitions[unique_indices2[1:nbp2]]
 
@@ -176,10 +176,10 @@ function clustering_information_dist(tree1::AbstractTree, tree2::AbstractTree; d
         # Use all bipartitions
         bpindices1 = @view bptable.records[:, 1]
         bpindices2 = @view bptable.records[:, 2]
-        nbp1 = findfirst(!iszero, bpindices1)
-        nbp2 = findfirst(!iszero, bpindices2)
-        bplist1 = @view bptable.bipartitions[bpindices1[1:nbp1]]
-        bplist2 = @view bptable.bipartitions[bpindices2[1:nbp2]]
+        firstbp1 = findfirst(!iszero, bpindices1)
+        firstbp2 = findfirst(!iszero, bpindices2)
+        bplist1 = @view bptable.bipartitions[bpindices1[firstbp1:end]]
+        bplist2 = @view bptable.bipartitions[bpindices2[firstbp2:end]]
 
         d = clustering_information_dist!(M, bplist1, bplist2, ntax)
     end
