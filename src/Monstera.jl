@@ -83,9 +83,11 @@ include("tree_paths.jl")
 export find_path
 
 include("bipartitions.jl")
-export TaxonBipartition, bipartitions, bipartition_table, are_compatible, is_singleton
+export TaxonBipartition, bipartitions, bipartition_record, are_compatible, is_singleton
 
 include("cluster_information.jl")
+
+# include("cluster_information2.jl")
 
 include("tree_distances.jl")
 export distance
