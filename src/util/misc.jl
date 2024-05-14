@@ -21,27 +21,26 @@ function special_countdiff(v1, v2)
     n = length(v1)
     i, j = 1, 1
     d = 0
-    finished_a_vec = false
+    reached_end_of_one_vector = false
 
     while i ≤ n && j ≤ n
         # Skip zeros
-        if @inbounds v1[i] == 0
-            while v1[i] == 0
-                i += 1
-                finished_a_vec = i == n
-                finished_a_vec && break
+        while v1[i] == 0
+            if i == n
+                reached_end_of_one_vector = true
+                break
             end
-            finished_a_vec && break
+            i += 1
         end
 
-        if @inbounds v2[j] == 0
-            while @inbounds v2[j] == 0
-                j += 1
-                finished_a_vec = j == n
-                finished_a_vec && break
+        while @inbounds v2[j] == 0
+            if j == n
+                reached_end_of_one_vector = true
+                break
             end
-            finished_a_vec && break
+            j += 1
         end
+        reached_end_of_one_vector && break
 
         # Add to result if the elements are not the same
         if @inbounds v1[i] < v2[j]
@@ -92,27 +91,27 @@ function special_setdiff!(res1, res2, v1, v2)
     n = length(v1)
     i, j = 1, 1
     r1, r2 = 0, 0
-    finished_a_vec = false
+    reached_end_of_one_vector = false
 
     while i ≤ n && j ≤ n
         # Skip zeros
-        if @inbounds v1[i] == 0
-            while @inbounds v1[i] == 0
-                i += 1
-                finished_a_vec = i == n
-                finished_a_vec && break
+        while @inbounds v1[i] == 0
+            if i == n
+                reached_end_of_one_vector = true
+                break
             end
-            finished_a_vec && break
+            i += 1
         end
 
-        if @inbounds v2[j] == 0
-            while @inbounds v2[j] == 0
-                j += 1
-                finished_a_vec = j == n
-                finished_a_vec && break
+        while @inbounds v2[j] == 0
+            if j == n
+                reached_end_of_one_vector = true
+                break
             end
-            finished_a_vec && break
+            j += 1
         end
+
+        reached_end_of_one_vector && break
 
         # Add to result if the elements are not the same
         if @inbounds v1[i] < v2[j]
@@ -131,18 +130,20 @@ function special_setdiff!(res1, res2, v1, v2)
         end
     end
     
-    while i ≤ n
-        @inbounds v1[i] == 0 && break
-        r1 += 1
-        @inbounds res1[r1] = v1[i]
-        i += 1
+    if i ≤ n && @inbounds v1[i] ≠ 0
+        while i ≤ n
+            r1 += 1
+            @inbounds res1[r1] = v1[i]
+            i += 1
+        end
     end
     
-    while j ≤ n
-        @inbounds v2[j] == 0 && break
-        r2 += 1
-        @inbounds res2[r2] = v2[j]
-        j += 1
+    if j ≤ n && @inbounds v2[j] ≠ 0
+        while j ≤ n
+            r2 += 1
+            @inbounds res2[r2] = v2[j]
+            j += 1
+        end
     end
 
     return r1, r2
