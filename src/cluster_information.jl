@@ -45,9 +45,9 @@ function mutual_clustering_information(tree1::AbstractTree, tree2::AbstractTree)
     return mutual_clustering_information(bplist1, bplist2)
 end
 
-function _mutual_clustering_information!(M::AbstractMatrix{Float64}, bplist1, bplist2, lrows, lcols, ntax)
-    mci_cost_matrix!(M, bplist1, bplist2, lrows, lcols, ntax)
-    optimal_matching = find_best_assignment(@view(M[1:lrows, 1:lcols]), true)
+function _mutual_clustering_information!(C::AbstractMatrix{Float64}, bplist1, bplist2, lrows, lcols, ntax)
+    mci_cost_matrix!(C, bplist1, bplist2, lrows, lcols, ntax)
+    optimal_matching = find_best_assignment(@view(C[1:lrows, 1:lcols]), true)
     
     return optimal_matching.cost / ntax
 end
@@ -56,14 +56,14 @@ end
 function mutual_clustering_information(bplist1, bplist2, ntax = length(bplist1[1]))
     lrows = length(bplist1)
     lcols = length(bplist2)
-    M = zeros(lrows, lcols)
+    C = zeros(lrows, lcols)
     
-    return _mutual_clustering_information!(M, bplist1, bplist2, lrows, lcols, ntax)
+    return _mutual_clustering_information!(C, bplist1, bplist2, lrows, lcols, ntax)
 end
 
 
 function clustering_information_dist!(
-    M::AbstractMatrix{Float64},
+    C::AbstractMatrix{Float64},
     bplist1,
     bplist2,
     ntax = length(first(bplist1))
@@ -76,18 +76,19 @@ function clustering_information_dist!(
         if lcols == 0
             return 0.0
         else
-            return 0.5 * sum(_clustering_entropy(bp) for bp in bplist2) / ntax
+            return sum(_clustering_entropy(bp) for bp in bplist2) / ntax
         end
     end
 
     lcols == 0 &&
-        return 0.5 * sum(_clustering_entropy(bp) for bp in bplist1) / ntax
+        return sum(_clustering_entropy(bp) for bp in bplist1) / ntax
 
-    s = _mutual_clustering_information!(M, bplist1, bplist2, lrows, lcols, ntax)
+    s = _mutual_clustering_information!(C, bplist1, bplist2, lrows, lcols, ntax)
     H = sum(_clustering_entropy(bp) for bp in bplist1) +
         sum(_clustering_entropy(bp) for bp in bplist2)
 
-    return 0.5 * H / ntax - s
+    # return 0.5 * H / ntax - s
+    return H / ntax - s - s
 end
 
 
@@ -95,12 +96,12 @@ function clustering_information_dist(trees; diffonly=true)
     ntrees = length(trees)
     ntax = length(first(trees).taxonset)
 
-    bptable = bipartition_table(trees)
+    bprecord = bipartition_record(trees)
 
-    bpindices1 = zeros(UInt32, size(bptable.records, 1))
-    bpindices2 = zeros(UInt32, size(bptable.records, 1))
+    bpindices1 = zeros(UInt32, size(bprecord.occurrences, 1))
+    bpindices2 = zeros(UInt32, size(bprecord.occurrences, 1))
 
-    M = zeros(ntax - 3, ntax - 3)          # Cost matrix for bipartition matching
+    C = zeros(ntax - 3, ntax - 3)          # Cost matrix for bipartition matching
     D = zeros(Float64, ntrees, ntrees)     # Distance matrix
     Dsize = ntrees * (ntrees - 1) ÷ 2      # Number of actual non-zero entries
     progmeter = Progress(Dsize;
@@ -113,18 +114,18 @@ function clustering_information_dist(trees; diffonly=true)
     
     if diffonly
         # Select only the bipartitions that are not shared between the two trees
-        unique_indices1 = zeros(UInt32, size(bptable.records, 1))
-        unique_indices2 = zeros(UInt32, size(bptable.records, 1))
+        unique_indices1 = zeros(UInt32, size(bprecord.occurrences, 1))
+        unique_indices2 = zeros(UInt32, size(bprecord.occurrences, 1))
 
         @inbounds for j in 2:ntrees, i in 1:(j - 1)
-            bpindices1 .= bptable.records[:, i]
-            bpindices2 .= bptable.records[:, j]
+            bpindices1 .= bprecord.occurrences[:, i]
+            bpindices2 .= bprecord.occurrences[:, j]
             nbp1, nbp2 =
                 special_setdiff!(unique_indices1, unique_indices2, bpindices1, bpindices2)
-            bplist1 = bptable.bipartitions[unique_indices1[1:nbp1]]
-            bplist2 = bptable.bipartitions[unique_indices2[1:nbp2]]
+            bplist1 = bprecord.bipartitions[unique_indices1[1:nbp1]]
+            bplist2 = bprecord.bipartitions[unique_indices2[1:nbp2]]
     
-            D[i, j] = clustering_information_dist!(M, bplist1, bplist2, ntax)
+            D[i, j] = clustering_information_dist!(C, bplist1, bplist2, ntax)
 
             unique_indices1 .= zero(UInt32)
             unique_indices2 .= zero(UInt32)
@@ -133,14 +134,16 @@ function clustering_information_dist(trees; diffonly=true)
     else
         # Use all bipartitions
         @inbounds for j in 1:ntrees, i in 1:(j - 1)
-            bpindices1 .= bptable.records[:, i]
-            bpindices2 .= bptable.records[:, j]
+            bpindices1 .= bprecord.occurrences[:, i]
+            bpindices2 .= bprecord.occurrences[:, j]
             firstbp1 = findfirst(!iszero, bpindices1)
             firstbp2 = findfirst(!iszero, bpindices2)
-            bplist1 = @view bptable.bipartitions[bpindices1[firstbp1:end]]
-            bplist2 = @view bptable.bipartitions[bpindices2[firstbp2:end]]
+            bplist1 = isnothing(firstbp1) ? TaxonBipartition[] : @view bprecord.bipartitions[bpindices1[firstbp1:end]]
+            bplist2 = isnothing(firstbp2) ? TaxonBipartition[] : @view bprecord.bipartitions[bpindices2[firstbp2:end]]
+            # bplist1 = @view bprecord.bipartitions[bpindices1[firstbp1:end]]
+            # bplist2 = @view bprecord.bipartitions[bpindices2[firstbp2:end]]
     
-            D[i, j] = clustering_information_dist!(M, bplist1, bplist2, ntax)
+            D[i, j] = clustering_information_dist!(C, bplist1, bplist2, ntax)
             next!(progmeter)
         end
     end
@@ -154,34 +157,34 @@ end
 function clustering_information_dist(tree1::AbstractTree, tree2::AbstractTree; diffonly=true)
     ntax = length(tree1.taxonset)
 
-    bptable = bipartition_table((tree1, tree2))
-    M = zeros(ntax - 3, ntax - 3)          # Cost matrix for bipartition matching
+    bprecord = bipartition_record((tree1, tree2))
+    C = zeros(ntax - 3, ntax - 3)          # Cost matrix for bipartition matching
 
     if diffonly
         # Select only the bipartitions that are not shared between the two trees
-        unique_indices1 = zeros(UInt32, size(bptable.records, 1))
-        unique_indices2 = zeros(UInt32, size(bptable.records, 1))
+        unique_indices1 = zeros(UInt32, size(bprecord.occurrences, 1))
+        unique_indices2 = zeros(UInt32, size(bprecord.occurrences, 1))
 
-        bpindices1 = @view bptable.records[:, 1]
-        bpindices2 = @view bptable.records[:, 2]
+        bpindices1 = @view bprecord.occurrences[:, 1]
+        bpindices2 = @view bprecord.occurrences[:, 2]
 
         nbp1, nbp2 =
             special_setdiff!(unique_indices1, unique_indices2, bpindices1, bpindices2)
 
-        bplist1 = @view bptable.bipartitions[unique_indices1[1:nbp1]]
-        bplist2 = @view bptable.bipartitions[unique_indices2[1:nbp2]]
+        bplist1 = @view bprecord.bipartitions[unique_indices1[1:nbp1]]
+        bplist2 = @view bprecord.bipartitions[unique_indices2[1:nbp2]]
 
-        d = clustering_information_dist!(M, bplist1, bplist2, ntax)
+        d = clustering_information_dist!(C, bplist1, bplist2, ntax)
     else
         # Use all bipartitions
-        bpindices1 = @view bptable.records[:, 1]
-        bpindices2 = @view bptable.records[:, 2]
+        bpindices1 = @view bprecord.occurrences[:, 1]
+        bpindices2 = @view bprecord.occurrences[:, 2]
         firstbp1 = findfirst(!iszero, bpindices1)
         firstbp2 = findfirst(!iszero, bpindices2)
-        bplist1 = @view bptable.bipartitions[bpindices1[firstbp1:end]]
-        bplist2 = @view bptable.bipartitions[bpindices2[firstbp2:end]]
+        bplist1 = isnothing(firstbp1) ? TaxonBipartition[] : @view bprecord.bipartitions[bpindices1[firstbp1:end]]
+        bplist2 = isnothing(firstbp2) ? TaxonBipartition[] : @view bprecord.bipartitions[bpindices2[firstbp2:end]]
 
-        d = clustering_information_dist!(M, bplist1, bplist2, ntax)
+        d = clustering_information_dist!(C, bplist1, bplist2, ntax)
     end
 
     return d
@@ -191,43 +194,47 @@ end
 """
 Return matrix with ``s * n`` value of each bipartition matching.
 """
-function mci_cost_matrix!(M, bplist1, bplist2, lrows, lcols, ntax)
+function mci_cost_matrix!(C, bplist1, bplist2, lrows, lcols, ntax)
     log2ntax = log2(ntax)
+
+    nA2list = count_ones.(bplist1)
+    log2nA2list = log2.(nA2list)
+    log2nB2list = @. log2(ntax - nA2list)
+
     @inbounds for colnum in 1:lcols
         bp1 = bplist2[colnum]
-        A1 = mapreduce(count_ones, +, bp1.v.chunks)
-        B1 = ntax - A1
-        log2A1 = log2(A1)
-        log2B1 = log2(B1)
+        nA1 = mapreduce(count_ones, +, bp1.v.chunks)
+        nB1 = ntax - nA1
+        log2nA1 = log2(nA1)
+        log2nB1 = log2(nB1)
         
         @inbounds for rownum in 1:lrows
             bp2 = bplist1[rownum]
-            A2 = mapreduce(count_ones, +, bp2.v.chunks)
-            B2 = ntax - A2
+            nA2 = nA2list[rownum]
+            log2nA2 = log2nA2list[rownum]
+            log2nB2 = log2nB2list[rownum]
 
-            iA1A2 = 0
+            nUA1A2 = 0
             for (chunk1, chunk2) in zip(bp1.v.chunks, bp2.v.chunks)
-                iA1A2 += count_ones(chunk1 & chunk2)
+                nUA1A2 += count_ones(chunk1 & chunk2)
             end
-            iA1B2 = A1 - iA1A2
-            iB1A2 = A2 - iA1A2
-            iB1B2 = B1 - iB1A2
+            nUA1B2 = nA1 - nUA1A2
+            nUB1A2 = nA2 - nUA1A2
+            nUB1B2 = nB1 - nUB1A2
 
-            log2A2 = log2(A2)
-            log2B2 = log2(B2)
     
             s  =
-                ifelse(iA1A2 > 0, iA1A2 * (log2ntax + log2(iA1A2) - log2A1 - log2A2), 0.0)
+                ifelse(nUA1A2 > 0, nUA1A2 * (log2ntax + log2(nUA1A2) - log2nA1 - log2nA2), 0.0)
             s +=
-                ifelse(iA1B2 > 0, iA1B2 * (log2ntax + log2(iA1B2) - log2A1 - log2B2), 0.0)
+                ifelse(nUA1B2 > 0, nUA1B2 * (log2ntax + log2(nUA1B2) - log2nA1 - log2nB2), 0.0)
             s +=
-                ifelse(iB1A2 > 0, iB1A2 * (log2ntax + log2(iB1A2) - log2B1 - log2A2), 0.0)
+                ifelse(nUB1A2 > 0, nUB1A2 * (log2ntax + log2(nUB1A2) - log2nB1 - log2nA2), 0.0)
             s +=
-                ifelse(iB1B2 > 0, iB1B2 * (log2ntax + log2(iB1B2) - log2B1 - log2B2), 0.0)
+                ifelse(nUB1B2 > 0, nUB1B2 * (log2ntax + log2(nUB1B2) - log2nB1 - log2nB2), 0.0)
     
-            M[rownum, colnum] = s
+            C[rownum, colnum] = s
         end
     end
 
-    return M
+    return C
 end

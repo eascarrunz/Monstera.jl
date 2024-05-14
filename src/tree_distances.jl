@@ -1,7 +1,7 @@
 function rf_dist(trees; progress::Bool=true)
     ntree = length(trees)
     D = zeros(Int, ntree, ntree)
-    bptable = bipartition_table(trees)
+    bptable = bipartition_record(trees)
     Dsize = ntree * (ntree - 1) ÷ 2 
     if progress
         progmeter = Progress(
@@ -14,7 +14,7 @@ function rf_dist(trees; progress::Bool=true)
             )
     end
     for j in 1:ntree, i in 1:j
-        @inbounds D[i, j] = special_countdiff(bptable.records[:, i], bptable.records[:, j])
+        @inbounds D[i, j] = special_countdiff(bptable.occurrences[:, i], bptable.occurrences[:, j])
         progress && next!(progmeter)
     end
     progress && finish!(progmeter)
@@ -23,9 +23,9 @@ function rf_dist(trees; progress::Bool=true)
 end
 
 function rf_dist(tree1::AbstractTree, tree2::AbstractTree)
-    bptable = bipartition_table((tree1, tree2))
+    bptable = bipartition_record((tree1, tree2))
 
-    return @inbounds special_countdiff(bptable.records[:, 1], bptable.records[:, 2])
+    return @inbounds special_countdiff(bptable.occurrences[:, 1], bptable.occurrences[:, 2])
 end
 
 
