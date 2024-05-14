@@ -137,15 +137,15 @@ function are_compatible(bp1::TaxonBipartition, bp2::TaxonBipartition)
 end
 
 
-mutable struct BipartitionTable
+mutable struct BipartitionRecord
     "Map from bp to bp index in the table"
     dict::OrderedDict{TaxonBipartition,UInt}
     "Table with the indices of bps in each tree, column-wise"
-    records::Matrix{UInt}
+    occurrences::Matrix{UInt}
     "Number of bps encountered in the table"
     nbp::UInt
 
-    function BipartitionTable(ntax, ntrees)
+    function BipartitionRecord(ntax, ntrees)
         bps_in_tree = ntax - 3
         dict = OrderedDict{TaxonBipartition,UInt}()
         records = zeros(UInt, bps_in_tree, ntrees)
@@ -155,11 +155,11 @@ mutable struct BipartitionTable
 end
 
 
-Base.show(io::IO, bpt::BipartitionTable) =
-    print(io, "BipartitionTable: $(bpt.nbp) bipartitions from $(size(bpt.records, 2)) trees")
+Base.show(io::IO, bpt::BipartitionRecord) =
+    print(io, "BipartitionTable: $(bpt.nbp) bipartitions from $(size(bpt.occurrences, 2)) trees")
 
 
-function Base.getproperty(bpt::BipartitionTable, key::Symbol)
+function Base.getproperty(bpt::BipartitionRecord, key::Symbol)
     if key == :bipartitions
         return getfield(getfield(bpt, :dict), :keys)
     else
@@ -168,7 +168,7 @@ function Base.getproperty(bpt::BipartitionTable, key::Symbol)
 end
 
 
-function add_record!(bp_table::BipartitionTable, bp, treecol, treerow)
+function add_record!(bp_table::BipartitionRecord, bp, treecol, treerow)
     normalise!(bp)
     bp_index = get(bp_table.dict, bp, 0)
 
@@ -178,14 +178,14 @@ function add_record!(bp_table::BipartitionTable, bp, treecol, treerow)
         bp_table.dict[bp] = bp_index
     end
 
-    @inbounds bp_table.records[treerow, treecol] = bp_index
+    @inbounds bp_table.occurrences[treerow, treecol] = bp_index
 
     return treerow + 1
 end
 
 
 function compute_bipartition!(
-    bp_table::BipartitionTable,
+    bp_table::BipartitionRecord,
     branchnode,
     ntax,
     treecol,
@@ -216,7 +216,7 @@ end
 
 
 """
-    bipartition_table(trees, trim=true)
+bipartition_record(trees, trim=true)
 
 Return a record of the incidences of bipartitions in a collection of trees.
 
@@ -229,15 +229,15 @@ The record consists of a matrix where the trees are arranged by columns. Trees t
 fully resolved will contain zeros representing the absence of bipartitions.
 
 # Properties
-(Accessable through the dot-syntax)
+(Accessible through the dot-syntax)
 
 - `bipartitions`: The list of unique bipartitions
 """
-function bipartition_table(trees)
+function bipartition_record(trees)
     NType = nodetype(eltype(trees))
     ntrees = length(trees)
     ntax = length(first(trees).taxonset)
-    bp_table = BipartitionTable(ntax, ntrees)
+    bp_table = BipartitionRecord(ntax, ntrees)
 
     progmeter = Progress(
         ntrees;
@@ -267,7 +267,7 @@ function bipartition_table(trees)
     end
 
     @showprogress desc="Sorting bipartition indices" dt=2 showspeed=true foreach(
-        sort!, eachcol(bp_table.records)
+        sort!, eachcol(bp_table.occurrences)
         )
     
     return bp_table
