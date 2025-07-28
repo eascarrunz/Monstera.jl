@@ -16,3 +16,5 @@ experimentation with a variety of data structures to represent trees
     - Non-splitting nodes are permitted
 
 - Be ergonomic for interactive use
+
+See more details in the [documentation](https://eascarrunz.github.io/Monstera.jl/).
