@@ -5,7 +5,7 @@ CurrentModule = Monstera
 
 ```@contents
 Pages = ["docstrings.md"]
-``` 
+```
 
 ## Managing sets of taxa
 ```@docs
@@ -25,6 +25,7 @@ randtree
 
 ## Reading and writing Newick trees
 ```@docs
+Newick
 Newick.parse
 Newick.read
 Newick.string
@@ -38,6 +39,15 @@ Newick.ReaderSettings
 textplot
 ```
 
+## Abstract types
+```@docs
+AbstractNode
+AbstractBranch
+treetype
+nodetype
+branchtype
+```
+
 ## Branches and nodes
 ```@docs
 neighbours
@@ -47,10 +57,20 @@ isouter
 nodes_flanking
 branch_between
 hasparent
-parent(::Node)
+parent
 link!
 unlink!
+newnode!
+newbranch!
+swapnodes!
 graft!
+```
+
+## Traversal
+```@docs
+pretraverse
+cladesize
+find_path
 ```
 
 ## Bipartitions
@@ -59,7 +79,7 @@ TaxonBipartition
 bipartitions
 is_singleton
 are_compatible
-bipartition_table
+bipartition_record
 ```
 
 ## Tree distances

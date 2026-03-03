@@ -4,7 +4,7 @@ DocMeta.setdocmeta!(Monstera, :DocTestSetup, :(using Monstera); recursive=true)
 
 makedocs(;
     sitename = "Monstera.jl",
-    # modules = [Monstera],
+    modules = [Monstera],
     doctest = false,
     checkdocs = :exports,
     )
